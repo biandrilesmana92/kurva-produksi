@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kurva 3 Tahap Produksi</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0f0f;
+      --card: #191919;
+      --light: #222;
+      --border: #343434;
+      --text: #f5f5f5;
+      --muted: #aaa;
+      --blue: #8ecbff;
+      --green: #4ade80;
+      --pink: #ff91d0;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    header { margin-bottom: 20px; }
+
+    h1 {
+      font-size: clamp(24px, 4vw, 34px);
+      margin: 0 0 6px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .stages {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stage {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      text-align: left;
+      color: var(--text);
+      background: #1b1b1b;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, transform .2s;
+    }
+
+    .stage:hover {
+      background: #262626;
+      transform: translateY(-2px);
+    }
+
+    .stage.active {
+      background: #202a35;
+      border: 1px solid var(--blue);
+      box-shadow: 0 0 0 1px #8ecbff20;
+    }
+
+    .stage-label {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      background: #303030;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    .stage h2 {
+      font-size: 15px;
+      line-height: 1.4;
+      margin: 0 0 6px;
+    }
+
+    .stage p {
+      font-size: 12px;
+      color: #bbb;
+      line-height: 1.5;
+      margin: 0;
+      font-style: italic;
+    }
+
+    .hint {
+      margin: -8px 0 16px;
+      color: #888;
+      font-size: 11px;
+    }
+
+    .info-panel {
+      background: var(--card);
+      border-radius: 13px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .info-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .info-heading h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .info-heading span {
+      color: var(--muted);
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat {
+      min-width: 0;
+      padding: 10px;
+      background: var(--light);
+      border-radius: 9px;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 5px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+    }
+
+    .blue { color: var(--blue); }
+    .green { color: var(--green); }
+    .pink { color: var(--pink); }
+
+    .explanation {
+      color: #bbb;
+      font-size: 12px;
+      line-height: 1.7;
+      margin: 12px 0 0;
+    }
+
+    .chart-card {
+      padding: 10px 6px 18px;
+    }
+
+    .chart-title {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin: 0 0 12px;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 380px;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-top: 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    footer {
+      text-align: center;
+      color: #777;
+      font-size: 11px;
+      padding: 18px 0;
+    }
+
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+
+      .stages {
+        grid-template-columns: 1fr;
+        gap: 9px;
+      }
+
+      .stage { padding: 13px; }
+
+      .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .chart-container { height: 310px; }
+
+      .info-panel { padding: 13px; }
+
+      .legend { gap: 12px; }
+      .legend-item { font-size: 11px; }
+    }
+
+    @media (max-width: 380px) {
+      .chart-container { height: 270px; }
+      .stat-value { font-size: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+<main class="container">
+
+  <header>
+    <h1>Kurva 3 Tahap Produksi</h1>
+    <p class="subtitle">
+      Hubungan Matematis Antara Total Product (TP),
+      Average Product (AP), dan Marginal Product (MP)
+    </p>
+  </header>
+
+  <section class="stages">
+    <button class="stage active" data-stage="1" aria-pressed="true">
+      <span class="stage-label">Tahap I</span>
+      <h2>Produksi Meningkat</h2>
+      <p>L = 0 s.d. 4 | MP ≥ AP</p>
+    </button>
+
+    <button class="stage" data-stage="2" aria-pressed="false">
+      <span class="stage-label">Tahap II</span>
+      <h2>Rasional / Rasio Efisien</h2>
+      <p>L = 4 s.d. 8 | MP menurun, TP menuju maksimum</p>
+    </button>
+
+    <button class="stage" data-stage="3" aria-pressed="false">
+      <span class="stage-label">Tahap III</span>
+      <h2>Produksi Menurun</h2>
+      <p>L &gt; 8 | MP &lt; 0</p>
+    </button>
+  </section>
+
+  <p class="hint">Klik salah satu tahap untuk melihat grafik dan keterangannya.</p>
+
+  <section class="info-panel">
+    <div class="info-heading">
+      <h2 id="panelTitle">Tahap I — Produksi Meningkat</h2>
+      <span id="workerInfo">Rentang pekerja: L = 0–4</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Pekerja (L)</span>
+        <div class="stat-value" id="workerValue">4</div>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label blue">Total (TP)</span>
+        <div class="stat-value" id="tpValue">80</div>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label green">Rata-rata (AP)</span>
+        <div class="stat-value" id="apValue">20</div>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label pink">Marginal (MP)</span>
+        <div class="stat-value" id="mpValue">20</div>
+      </div>
+    </div>
+
+    <p class="explanation" id="explanation">
+      Tahap I: Output total meningkat. Produktivitas rata-rata cenderung
+      meningkat hingga mencapai batas akhir tahap ini.
+    </p>
+  </section>
+
+  <section class="chart-card">
+    <p class="chart-title" id="chartTitle">
+      Grafik produksi — Tahap I
+    </p>
+
+    <div class="chart-container">
+      <canvas id="productionChart"></canvas>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <span class="dot" style="background:#8ecbff"></span>
+        Total Product (TP)
+      </div>
+      <div class="legend-item">
+        <span class="dot" style="background:#4ade80"></span>
+        Average Product (AP)
+      </div>
+      <div class="legend-item">
+        <span class="dot" style="background:#ff91d0"></span>
+        Marginal Product (MP)
+      </div>
+    </div>
+  </section>
+
+  <footer>Kurva Teori Produksi | TP, AP, dan MP</footer>
+</main>
+
+<script>
+  const labelsL = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+  const dataTP = [0, 10, 30, 60, 80, 95, 102, 105, 105, 100, 90];
+  const dataAP = [0, 10, 15, 20, 20, 19, 17, 15, 13.1, 11.1, 9];
+  const dataMP = [0, 10, 20, 30, 20, 15, 7, 3, 0, -5, -10];
+
+  const stages = {
+    1: {
+      title: "Tahap I — Produksi Meningkat",
+      range: "Rentang pekerja: L = 0–4",
+      start: 0,
+      end: 4,
+      selected: 4,
+      explanation:
+        "Tahap I: Produksi total meningkat. Produktivitas rata-rata meningkat hingga mendekati batas maksimum AP. Pada teori produksi, tahap ini berakhir ketika MP = AP."
+    },
+    2: {
+      title: "Tahap II — Daerah Produksi Rasional",
+      range: "Rentang pekerja: L = 4–8",
+      start: 4,
+      end: 8,
+      selected: 8,
+      explanation:
+        "Tahap II: Produksi masih bertambah, tetapi tambahan output cenderung menurun. Tahap ini berakhir ketika MP = 0 dan TP mencapai maksimum. Tahap ini umumnya dianggap daerah produksi rasional."
+    },
+    3: {
+      title: "Tahap III — Produksi Menurun",
+      range: "Rentang pekerja: L = 8–10",
+      start: 8,
+      end: 10,
+      selected: 10,
+      explanation:
+        "Tahap III: MP bernilai negatif. Penambahan pekerja dapat menurunkan output total karena penggunaan input tenaga kerja berlebih. Produsen umumnya menghindari tahap ini."
+    }
+  };
+
+  const ctx = document.getElementById("productionChart");
+
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labelsL,
+      datasets: [
+        {
+          label: "Total Product (TP)",
+          data: [...dataTP],
+          yAxisID: "y",
+          borderColor: "#8ecbff",
+          backgroundColor: "#8ecbff",
+          pointBackgroundColor: "#0f0f0f",
+          pointBorderColor: "#8ecbff",
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          tension: 0.25,
+          spanGaps: false
+        },
+        {
+          label: "Average Product (AP)",
+          data: [...dataAP],
+          yAxisID: "y1",
+          borderColor: "#4ade80",
+          backgroundColor: "#4ade80",
+          pointBackgroundColor: "#0f0f0f",
+          pointBorderColor: "#4ade80",
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          tension: 0.25,
+          spanGaps: false
+        },
+        {
+          label: "Marginal Product (MP)",
+          data: [...dataMP],
+          yAxisID: "y1",
+          borderColor: "#ff91d0",
+          backgroundColor: "#ff91d0",
+          pointBackgroundColor: "#0f0f0f",
+          pointBorderColor: "#ff91d0",
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          borderWidth: 2,
+          tension: 0.25,
+          spanGaps: false
+        }
+      ]
+    },
+
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+
+      interaction: {
+        mode: "index",
+        intersect: false
+      },
+
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "#242424",
+          titleColor: "#fff",
+          bodyColor: "#eee",
+          borderColor: "#444",
+          borderWidth: 1,
+          padding: 10
+        }
+      },
+
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Input Pekerja (L)",
+            color: "#999"
+          },
+          ticks: { color: "#aaa", maxRotation: 0 },
+          grid: { color: "#292929" }
+        },
+
+        y: {
+          type: "linear",
+          position: "left",
+          min: 0,
+          max: 120,
+          title: {
+            display: true,
+            text: "Total Output (TP)",
+            color: "#8ecbff"
+          },
+          ticks: { color: "#aaa", stepSize: 30 },
+          grid: { color: "#292929" }
+        },
+
+        y1: {
+          type: "linear",
+          position: "right",
+          min: -15,
+          max: 35,
+          title: {
+            display: true,
+            text: "AP & MP",
+            color: "#ff91d0"
+          },
+          ticks: { color: "#aaa", stepSize: 10 },
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
+
+  function selectStage(stageNumber) {
+    const stage = stages[stageNumber];
+
+    // Sorot bagian grafik yang sesuai tahap yang dipilih.
+    chart.data.datasets[0].data = dataTP.map((value, i) =>
+      i >= stage.start && i <= stage.end ? value : null
+    );
+
+    chart.data.datasets[1].data = dataAP.map((value, i) =>
+      i >= stage.start && i <= stage.end ? value : null
+    );
+
+    chart.data.datasets[2].data = dataMP.map((value, i) =>
+      i >= stage.start && i <= stage.end ? value : null
+    );
+
+    chart.update();
+
+    // Perbarui judul, data, dan penjelasan.
+    const i = stage.selected;
+
+    document.getElementById("panelTitle").textContent = stage.title;
+    document.getElementById("workerInfo").textContent = stage.range;
+    document.getElementById("chartTitle").textContent =
+      "Grafik produksi — Tahap " + stageNumber;
+
+    document.getElementById("workerValue").textContent = labelsL[i];
+    document.getElementById("tpValue").textContent = dataTP[i];
+    document.getElementById("apValue").textContent = dataAP[i];
+    document.getElementById("mpValue").textContent = dataMP[i];
+    document.getElementById("explanation").textContent =
+      stage.explanation;
+
+    // Tandai kartu yang aktif.
+    document.querySelectorAll(".stage").forEach(button => {
+      const active = Number(button.dataset.stage) === stageNumber;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
+
+  document.querySelectorAll(".stage").forEach(button => {
+    button.addEventListener("click", () => {
+      selectStage(Number(button.dataset.stage));
+    });
+  });
+
+  // Tampilkan Tahap I saat halaman pertama kali dibuka.
+  selectStage(1);
+</script>
+</body>
+</html>
